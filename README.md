@@ -58,7 +58,8 @@ A crawl's raw entries are held in memory on the server (`src/state.js`) rather t
 
 **Tooling**
 - `concurrently` — runs the backend and frontend dev servers with a single command
-- Docker — multi-stage build producing one image that serves both
+- Node's built-in test runner (`node:test`) — backend endpoint tests, no test framework dependency
+- Docker — multi-stage build that runs the backend tests as a build step, then produces one image serving both
 
 ## Project Structure
 
@@ -70,16 +71,19 @@ A crawl's raw entries are held in memory on the server (`src/state.js`) rather t
 ├── package.json                 # backend deps + combined dev script
 ├── db/
 │   └── audit.db                  # SQLite file, created on first run (gitignored)
+├── test/
+│   └── api.test.js                # backend endpoint tests (node:test)
 ├── src/
-│   ├── server.js                  # Express bootstrap, static frontend serving
-│   ├── state.js                   # in-memory "last crawl" cache + guard middleware
-│   ├── db.js                      # SQLite connection, schema, audit read/write
+│   ├── app.js                      # Express app: middleware + routes (no listen)
+│   ├── server.js                   # imports app.js, calls .listen()
+│   ├── state.js                    # in-memory "last crawl" cache + guard middleware
+│   ├── db.js                       # SQLite connection, schema, audit read/write
 │   ├── routes/
-│   │   └── v1.js                   # v1 handlers + router: crawl, filters, audit
+│   │   └── v1.js                    # v1 handlers + router: crawl, filters, audit
 │   └── services/
-│       ├── fetcher.js              # axios wrapper
-│       ├── scraper.js              # cheerio-based HTML → structured entries
-│       └── filterService.js        # pure filter functions
+│       ├── fetcher.js               # axios wrapper
+│       ├── scraper.js               # cheerio-based HTML → structured entries
+│       └── filterService.js         # pure filter functions
 └── frontend/
     ├── vite.config.js              # dev server port + /api proxy to :3000
     ├── package.json
@@ -126,7 +130,12 @@ The frontend's Vite dev server proxies any `/api/*` request to the backend on po
 
 ## Docker
 
-A multi-stage build compiles the frontend to static assets and serves them from the same Express process as the API — one image, one port:
+A multi-stage build:
+
+1. Builds the frontend to static assets (`frontend-build`).
+2. Installs backend dependencies once (`backend-base`).
+3. Runs the full backend test suite (`backend-test`) — **the build fails here if any endpoint test fails.**
+4. Produces the final image on top of the already-tested stage, pruning dev dependencies and the test-generated database file, then copying in the built frontend.
 
 ```bash
 docker build -t code-challenge-crawler .
@@ -145,6 +154,22 @@ All routes are versioned under `/api/v1`.
 | `GET` | `/api/v1/entries/filter/points?min=` | Filters the last crawled entries by minimum points. Requires a prior crawl. Writes an audit record. |
 | `GET` | `/api/v1/entries/filter/comments?min=` | Filters the last crawled entries by minimum comment count. Requires a prior crawl. Writes an audit record. |
 | `GET` | `/api/v1/audit` | Returns the most recent audit records (source URL, filter type/params, result count, timestamp). |
+
+## Testing
+
+Backend endpoint tests use Node's built-in test runner (`node:test` + `node:assert`) — no test framework dependency needed. They exercise `POST /crawl`, both filter endpoints, the `/audit` read, and the "no crawl yet" guard, against the real Express app (`src/app.js`) via an ephemeral local port. The crawl test runs against a tiny local HTTP fixture server instead of the real site, so it's fast and deterministic.
+
+```bash
+npm test
+```
+
+```bash
+npm run test:coverage
+```
+
+`test:coverage` uses Node's built-in coverage reporter (`--experimental-test-coverage`) — no `nyc`/`c8` needed.
+
+These tests are also wired into the Docker build itself: the `Dockerfile` has a dedicated `backend-test` stage that the final image is built on top of (see `## Docker` below and the `Dockerfile` directly), so `docker build` fails outright if an endpoint test fails — a broken backend never makes it into a runnable image.
 
 ## Crawler & Scraping approach
 
