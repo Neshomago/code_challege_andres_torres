@@ -1,0 +1,13 @@
+{
+  "name": "code_challenge_andres_torres",
+  "version": "1.0.0",
+  "description": "Coding challenge for an interview process with Stack Builders.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Andres Torres",
+  "license": "ISC",
+  "type": "module"
+}
