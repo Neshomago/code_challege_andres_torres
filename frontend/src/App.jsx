@@ -4,13 +4,12 @@ import './App.css'
 const API_BASE = '/api/v1'
 
 function App() {
-  const [count, setCount] = useState(0)
   const [url, setUrl] = useState('https://news.ycombinator.com/')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [activeAction, setActiveAction] = useState(null)
-  const [minPoints, setMinPoints] = useState(10)
-  const [minComments, setMinComments] = useState(100)
+  const minPoints = 10
+  const minComments = 100
   const [result, setResult] = useState(null)
 
   const runRequest = async (action, requesFn) => {
