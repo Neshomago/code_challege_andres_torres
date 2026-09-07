@@ -46,7 +46,7 @@ The happy path where we see the actual flow we can appreciate in this image:
 
 ![Happy path flow](docs/happy-path.png)
 
-This lead us to take the following Tech Stack with the monorepo
+This lead us to take the following Tech Stack with a Monorepo architecture according to the complexity of the project.
 
 ![Tech stack Arch](docs/monorepo-architecture.png)
 
