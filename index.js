@@ -1,5 +1,6 @@
 
-import { $, webScraper } from "./scraper.js";
+import { webScraper } from "./scraper.js";
 
-webScraper("https://news.ycombinator.com/");
+const entries = await webScraper("https://news.ycombinator.com/");
 
+console.log('entries from scraper: ', entries);
