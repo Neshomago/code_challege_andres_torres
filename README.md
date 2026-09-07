@@ -24,23 +24,31 @@ Client-server, with a small versioned REST API in between:
 ```
 ┌──────────────┐        POST /api/v1/crawl         ┌──────────────┐
 │   Frontend   │ ────────────────────────────────▶ │              │
-│ (React/Vite) │                                    │   Backend    │──▶ axios + cheerio
+│ (React/Vite) │                                   │   Backend    │──▶ axios + cheerio
 │              │ ◀──────────────────────────────── │  (Express)   │    scrape target URL
-└──────┬───────┘   entries[] (cached in-memory)     └──────┬───────┘
-       │                                                    │
-       │  GET /api/v1/entries/filter/points                 │
-       │  GET /api/v1/entries/filter/comments                │
-       ▼                                                    ▼
+└──────┬───────┘   entries[] (cached in-memory)    └──────┬───────┘
+       │                                                  │
+       │  GET /api/v1/entries/filter/points               │
+       │  GET /api/v1/entries/filter/comments             │
+       ▼                                                  ▼
   filtered results                               every filter call is
   rendered as a grid                             recorded to audit.db
-                                                  (source_url, filter_type,
-                                                   filter_params, result_count,
-                                                   created_at)
+                                                 (source_url, filter_type,
+                                                 filter_params, result_count,
+                                                 created_at)
 
   GET /api/v1/audit ── reads the persisted audit trail back for display
 ```
 
 A crawl's raw entries are held in memory on the server (`src/state.js`) rather than persisted — only the audit trail of filter usage is stored in SQLite, per the exercise requirements. Both filter endpoints require a crawl to have run first.
+
+The happy path where we see the actual flow we can appreciate in this image:
+
+![Happy path flow](docs/happy-path.png)
+
+This lead us to take the following Tech Stack with the monorepo
+
+![Tech stack Arch](docs/monorepo-architecture.png)
 
 ## Tech Stack
 
@@ -60,6 +68,7 @@ A crawl's raw entries are held in memory on the server (`src/state.js`) rather t
 - `concurrently` — runs the backend and frontend dev servers with a single command
 - Node's built-in test runner (`node:test`) — backend endpoint tests, no test framework dependency
 - Docker — multi-stage build that runs the backend tests as a build step, then produces one image serving both
+- Husky — pre-commit (tests + lint) and pre-push (Docker build) git hooks
 
 ## Project Structure
 
@@ -168,6 +177,15 @@ npm run test:coverage
 ```
 
 `test:coverage` uses Node's built-in coverage reporter (`--experimental-test-coverage`) — no `nyc`/`c8` needed.
+
+### Git hooks (Husky)
+
+Two hooks run automatically — installed for anyone who clones the repo and runs `npm install`, via the `prepare` script:
+
+- **`pre-commit`** — runs `npm test` and the frontend's `eslint` check. A failing test or lint error aborts the commit before it's created.
+- **`pre-push`** — runs the full `docker build`, which itself runs the backend test suite as a build stage (see `## Docker` above). Deliberately kept off `pre-commit`, since a multi-stage Docker build is too slow to run on every commit.
+
+No extra setup needed beyond `npm install` — Husky wires the hooks into `.git/hooks` automatically.
 
 These tests are also wired into the Docker build itself: the `Dockerfile` has a dedicated `backend-test` stage that the final image is built on top of (see `## Docker` below and the `Dockerfile` directly), so `docker build` fails outright if an endpoint test fails — a broken backend never makes it into a runnable image.
 
