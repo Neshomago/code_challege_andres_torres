@@ -23,4 +23,4 @@ export const saveAudit = (filterType, params, count, url) => {
     `).run(url, filterType, JSON.stringify(params), count)
 }
 
-export const getRecentAudit = (limit = 20) => db.prepare(`SELECT * FROM audit ORDER BY created_at DESC LIMIT ?`, all(limit));
+export const getRecentAudit = (limit = 20) => db.prepare(`SELECT * FROM audit ORDER BY created_at DESC LIMIT ?`).all(limit);

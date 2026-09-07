@@ -135,3 +135,7 @@
 .grid-row:hover > .grid-cell {
   background: var(--code-bg);
 }
+
+.audit-grid {
+  grid-template-columns: 48px 1fr 90px 1fr 110px 160px;
+}
