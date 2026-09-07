@@ -1,0 +1,1 @@
+export const filterMinPoints = (entry, min) => entry.filter((item) => item.points >= min)
