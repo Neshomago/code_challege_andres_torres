@@ -1,5 +1,5 @@
 
-import { webScraper } from "./scraper.js";
+import { webScraper } from "./src/services/scraper.js";
 
 const entries = await webScraper("https://news.ycombinator.com/");
 
