@@ -8,7 +8,7 @@ const API_BASE = '/api/v1'
 
 function App() {
   const [count, setCount] = useState(0)
-  const [url, setUrl] = useState('')
+  const [url, setUrl] = useState('https://news.ycombinator.com/')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [activeAction, setActiveAction] = useState(null)
@@ -34,13 +34,13 @@ function App() {
   }
   
   const handleCrawl = () => {
-    runRequest('crawl', () => {
+    runRequest('crawl', () =>
       fetch(`${API_BASE}/crawl`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ url })
       })
-    })
+    )
   }
 
   const handleFilterComments = () => {
@@ -71,25 +71,28 @@ function App() {
       </section>
 
       <section>
-        <div>
-          <button
-              type="button"
-              className="counter"
-              onClick={handleFilterPoints}
-            >
-              Filter by points
-          </button>
+        <div className="filters">
+          <div>
+            <button
+                type="button"
+                className="counter"
+                onClick={handleFilterPoints}
+              >
+                Filter by points
+            </button>
+          </div>
+          
+          <div>
+            <button
+                type="button"
+                className="counter"
+                onClick={handleFilterComments}
+              >
+                Filter by comments
+            </button>
+          </div>
         </div>
-        
-        <div>
-        <button
-            type="button"
-            className="counter"
-            onClick={handleFilterComments}
-          >
-            Filter by comments
-        </button>
-        </div>
+
         <div>
         {loading && <p> Loading </p>}
         {error && <p className='error'> Error: {error} </p>}
@@ -97,6 +100,22 @@ function App() {
           <>
             <h2> Result - {activeAction}</h2>
             <p>Count: {result.count}</p>
+            {result.entries && (
+              <div className='results-grid'>
+                <div className="grid-header">#</div>
+                <div className="grid-header">Title</div>
+                <div className="grid-header center">Points</div>
+                <div className="grid-header center">Comments</div>
+                {result.entries.map((entry) => (
+                  <div className="grid-row" key={entry.number}>
+                    <div className="grid-cell">{entry.number}</div>
+                    <div className="grid-cell">{entry.title}</div>
+                    <div className="grid-cell center">{entry.points}</div>
+                    <div className="grid-cell center">{entry.comments}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
         </div>
